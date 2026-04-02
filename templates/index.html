@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AutoLens Pro — Car Background Studio</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Sans:wght@300;400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0A0A12;--surface:#12121C;--card:#1A1A26;--border:#252535;
+  --primary:#FF4D1C;--accent:#00D4FF;--accent-fg:#0A0A12;
+  --success:#00E676;--warning:#FFB020;--text:#F0F0F8;--muted:#6B6B88;
+  --radius:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+/* body = full viewport, no overflow at all */
+html,body{height:100%;overflow:hidden}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;display:flex;flex-direction:column}
+h1,h2,h3,.fd{font-family:'Bebas Neue',cursive}
+::-webkit-scrollbar{width:3px;height:3px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:2px}
+
+/* ══ Header ══ */
+.header{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  height:52px;display:flex;align-items:center;justify-content:space-between;
+  padding:0 24px;z-index:200;flex-shrink:0;
+}
+.logo{font-family:'Bebas Neue',cursive;font-size:22px;letter-spacing:3px;cursor:pointer}
+.logo .l1{background:linear-gradient(135deg,var(--primary),var(--warning));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.logo .l2{color:var(--accent);-webkit-text-fill-color:var(--accent)}
+.hdr-right{display:flex;align-items:center;gap:12px}
+.gbtn{font-size:12px;padding:6px 14px;border-radius:7px;border:1px solid var(--border);background:none;color:var(--muted);cursor:pointer;transition:all .2s;font-family:'DM Sans'}
+.gbtn:hover,.gbtn.active{border-color:var(--accent);color:var(--accent);background:rgba(0,212,255,.08)}
+.cpill{background:rgba(0,230,118,.08);border:1px solid rgba(0,230,118,.25);border-radius:50px;padding:4px 14px;display:flex;align-items:center;gap:6px}
+.cpill .cnt{font-family:'Bebas Neue',cursive;font-size:18px;color:var(--success)}
+.cpill .lbl{font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+
+/* ══ Loader ══ */
+.loader{position:fixed;inset:0;background:rgba(10,10,18,.92);z-index:999;display:none;align-items:center;justify-content:center;flex-direction:column;gap:14px}
+.loader.show{display:flex}
+.lring{width:48px;height:48px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin 1s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ltxt{color:var(--muted);font-size:13px}
+.lprog{width:200px;height:3px;background:var(--border);border-radius:2px;overflow:hidden;display:none}
+.lprog.show{display:block}
+.lprog-bar{height:100%;background:linear-gradient(90deg,var(--primary),var(--warning));transition:width .3s}
+
+/* ══ Toast ══ */
+.toast{position:fixed;bottom:20px;right:20px;z-index:1001;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:10px 18px;font-size:12px;max-width:280px;transform:translateY(60px);opacity:0;transition:all .3s}
+.toast.show{transform:translateY(0);opacity:1}
+.toast.ok{border-color:var(--success);color:var(--success)}
+.toast.err{border-color:var(--primary);color:var(--primary)}
+
+/* ══ Pages — each fills remaining height ══ */
+.page{display:none;flex:1;overflow:hidden}
+.page.active{display:flex}
+#pgUpload,#pgChoice{flex-direction:column;align-items:center;justify-content:center;padding:24px}
+#pgEditor{flex-direction:column}
+#pgGallery{flex-direction:column;overflow-y:auto;padding:24px}
+
+/* ── Upload ── */
+.ucenter{max-width:560px;width:100%;text-align:center}
+.uzone{border:2px dashed var(--border);border-radius:var(--radius);padding:32px 20px;cursor:pointer;transition:all .3s;background:linear-gradient(135deg,rgba(255,77,28,.02),rgba(0,212,255,.02))}
+.uzone:hover,.uzone.drag{border-color:var(--primary);background:rgba(255,77,28,.05)}
+.bchoose{margin-top:14px;padding:9px 22px;background:linear-gradient(135deg,var(--primary),#FF6B35);border:none;color:#fff;border-radius:8px;font-family:'DM Sans';font-weight:600;font-size:13px;cursor:pointer;transition:all .2s}
+.bchoose:hover{transform:translateY(-1px);box-shadow:0 5px 18px rgba(255,77,28,.3)}
+
+/* ── Choice ── */
+.ccenter{max-width:480px;width:100%;text-align:center}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:18px}
+.cbtn{border-radius:var(--radius);padding:20px 14px;cursor:pointer;border:2px solid var(--border);background:var(--card);text-align:center;transition:all .25s;display:flex;flex-direction:column;align-items:center;gap:7px}
+.cbtn:hover{transform:translateY(-3px)}
+.cbtn.oa{border-color:rgba(0,212,255,.25)}.cbtn.oa:hover{border-color:var(--accent);background:rgba(0,212,255,.04)}
+.cbtn.ob{border-color:rgba(255,77,28,.25)}.cbtn.ob:hover{border-color:var(--primary);background:rgba(255,77,28,.04)}
+.cico{font-size:28px}.ctitle{font-family:'Bebas Neue',cursive;font-size:17px;letter-spacing:2px}
+.oa .ctitle{color:var(--accent)}.ob .ctitle{color:var(--primary)}
+.cdesc{font-size:11px;color:var(--muted);line-height:1.4}
+.cbadge{display:inline-block;padding:2px 9px;border-radius:20px;font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase}
+.oa .cbadge{background:rgba(0,212,255,.1);color:var(--accent)}
+.ob .cbadge{background:rgba(255,77,28,.1);color:var(--primary)}
+.backlink{font-size:12px;color:var(--muted);cursor:pointer;background:none;border:none;font-family:'DM Sans'}
+.backlink:hover{color:var(--text)}
+
+/* ══════════════════════════════
+   EDITOR LAYOUT
+══════════════════════════════ */
+.etop{
+  background:var(--surface);border-bottom:1px solid var(--border);
+  height:46px;min-height:46px;display:flex;align-items:center;gap:10px;
+  padding:0 20px;flex-shrink:0;
+}
+.bbtn{background:none;border:1px solid var(--border);color:var(--muted);padding:5px 12px;border-radius:7px;font-size:11px;cursor:pointer;transition:all .2s;font-family:'DM Sans'}
+.bbtn:hover{border-color:var(--text);color:var(--text)}
+.ebody{display:flex;flex:1;overflow:hidden;min-height:0}
+
+/* ─── SIDEBAR: exact viewport fit, zero scroll ─── */
+.eside{
+  width:268px;min-width:268px;max-width:268px;
+  background:var(--surface);
+  border-right:1px solid var(--border);
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  /* height = 100% of .ebody which = 100vh - header - etop */
+}
+
+/* ── Module icon tabs (horizontal, top of sidebar) ── */
+.mod-tabs{
+  display:flex;background:rgba(0,0,0,.3);
+  border-bottom:1px solid var(--border);
+  flex-shrink:0;height:42px;
+}
+.mod-tab{
+  flex:1;display:flex;align-items:center;justify-content:center;
+  font-size:16px;cursor:pointer;border:none;background:none;
+  border-bottom:2px solid transparent;color:var(--muted);
+  transition:all .18s;position:relative;
+}
+.mod-tab:hover{background:rgba(255,255,255,.03);color:var(--text)}
+.mod-tab.active{color:var(--primary);border-bottom-color:var(--primary);background:rgba(255,77,28,.06)}
+/* tooltip */
+.mod-tab::after{
+  content:attr(data-tip);
+  position:absolute;top:calc(100% + 5px);left:50%;transform:translateX(-50%);
+  background:var(--card);border:1px solid var(--border);border-radius:5px;
+  padding:3px 7px;font-size:9px;color:var(--text);white-space:nowrap;
+  pointer-events:none;opacity:0;transition:opacity .15s;font-family:'DM Sans';
+  z-index:10;
+}
+.mod-tab:hover::after{opacity:1}
+
+/* ── Module content area: fills remaining sidebar height exactly ── */
+.mod-panels{flex:1;position:relative;overflow:hidden}
+.mod-panel{
+  position:absolute;inset:0;
+  padding:12px;
+  display:none;flex-direction:column;gap:8px;
+  overflow:hidden;  /* NO scrollbar ever */
+}
+.mod-panel.active{display:flex}
+
+/* ── Shared components ── */
+.elbl{font-family:'Bebas Neue',cursive;font-size:10px;letter-spacing:2px;color:var(--muted);text-transform:uppercase;margin-bottom:4px;flex-shrink:0}
+.abtn{
+  width:100%;padding:8px;border-radius:8px;
+  font-family:'DM Sans';font-weight:700;font-size:11px;
+  cursor:pointer;border:none;transition:all .18s;
+  display:flex;align-items:center;justify-content:center;gap:5px;
+  flex-shrink:0;
+}
+.abtn:hover{opacity:.88;transform:translateY(-1px)}
+.abtn.primary{background:linear-gradient(135deg,var(--primary),#FF6B35);color:#fff}
+.abtn.accent{background:linear-gradient(135deg,var(--accent),#0088CC);color:var(--accent-fg)}
+.abtn.outline{background:none;border:1px solid var(--border);color:var(--muted)}.abtn.outline:hover{border-color:var(--text);color:var(--text)}
+.abtn.success{background:linear-gradient(135deg,var(--success),#00C853);color:#0A0A12}
+.abtn.warning{background:linear-gradient(135deg,var(--warning),#FF8F00);color:#0A0A12}
+.spacer{flex:1}
+.toggle{width:32px;height:18px;border-radius:9px;position:relative;cursor:pointer;transition:background .2s;border:none;flex-shrink:0}
+.toggle .dot{position:absolute;top:2px;width:14px;height:14px;border-radius:50%;background:var(--text);transition:left .2s}
+.toggle.on{background:var(--primary)}.toggle.on .dot{left:16px}
+.toggle.off{background:var(--border)}.toggle.off .dot{left:2px}
+input[type=range]{width:100%;accent-color:var(--primary)}
+.tinput{background:var(--card);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:11px;font-family:'DM Sans';outline:none;width:100%}
+.tinput:focus{border-color:var(--primary)}
+.row{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--muted);flex-shrink:0}
+
+/* BG removal result (compact) */
+.bgr-done{background:var(--card);border:1px solid rgba(0,230,118,.2);border-radius:8px;padding:8px;display:none;flex-direction:column;gap:5px;flex-shrink:0}
+.bgr-done.show{display:flex}
+.bgr-checker{width:100%;height:52px;border-radius:5px;background:repeating-conic-gradient(#1e1e2e 0% 25%,#252535 0% 50%) 0 0/10px 10px;display:flex;align-items:center;justify-content:center;overflow:hidden}
+.bgr-checker img{max-height:52px;max-width:100%;object-fit:contain}
+.bgr-meta2{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.bm{background:rgba(255,255,255,.03);border-radius:5px;padding:4px 6px}
+.bm .k{font-size:8px;color:var(--muted);text-transform:uppercase;letter-spacing:.4px}
+.bm .v{font-size:10px;font-weight:600;color:var(--text)}
+
+/* BG library grid */
+.bgtabs{display:flex;background:var(--card);border-radius:6px;padding:2px;flex-shrink:0}
+.bgtab{flex:1;padding:4px 2px;text-align:center;font-size:10px;font-weight:500;border-radius:5px;cursor:pointer;color:var(--muted);transition:all .2s;border:none;background:none;font-family:'DM Sans';text-transform:capitalize}
+.bgtab.active{background:var(--primary);color:#fff}
+.bggrid{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.bgcard{border-radius:6px;padding:5px 3px;cursor:pointer;border:2px solid transparent;transition:all .2s;text-align:center}
+.bgcard:hover{border-color:var(--muted)}.bgcard.sel{border-color:var(--primary)}
+.bgprev{height:22px;border-radius:3px;margin-bottom:2px;border:1px solid rgba(255,255,255,.05)}
+.bgname{font-size:9px;color:var(--muted)}
+.swgrid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.sw{aspect-ratio:1;border-radius:3px;cursor:pointer;border:2px solid transparent;transition:all .15s}
+.sw:hover{transform:scale(1.1)}.sw.sel{border-color:var(--primary)}
+
+/* ══ MAIN preview area ══ */
+.emain{flex:1;min-width:0;padding:14px;display:flex;flex-direction:column;gap:10px;overflow:hidden}
+.preview-box{
+  background:var(--card);border:1px solid var(--border);border-radius:14px;
+  flex:1;min-height:0;
+  display:flex;align-items:center;justify-content:center;
+  overflow:hidden;position:relative;
+}
+.preview-box img{max-width:100%;max-height:100%;object-fit:contain;border-radius:8px}
+.status-tag{position:absolute;top:8px;left:8px;background:rgba(10,10,18,.75);color:var(--muted);font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:1px;text-transform:uppercase}
+.compare-wrap{position:relative;width:100%;height:100%;overflow:hidden}
+.compare-wrap img{position:absolute;inset:0;width:100%;height:100%;object-fit:contain}
+.compare-line{position:absolute;top:0;bottom:0;width:2px;background:var(--primary)}
+.compare-lbl{position:absolute;top:8px;background:rgba(10,10,18,.75);color:var(--muted);font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;letter-spacing:1px;text-transform:uppercase}
+.thumbstrip{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;flex-shrink:0;scrollbar-width:none}
+.thumbstrip::-webkit-scrollbar{display:none}
+.thumb{width:54px;height:40px;border-radius:7px;overflow:hidden;border:2px solid var(--border);cursor:pointer;flex-shrink:0;padding:0;background:none}
+.thumb.sel{border-color:var(--primary)}.thumb img{width:100%;height:100%;object-fit:cover}
+
+/* ══ Gallery ══ */
+.galgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(156px,1fr));gap:10px}
+.galcard{background:var(--card);border:1px solid var(--border);border-radius:8px;overflow:hidden;transition:all .2s;position:relative}
+.galcard:hover{border-color:rgba(255,77,28,.4);transform:translateY(-2px)}
+.galcard img{width:100%;height:96px;object-fit:cover}
+.galcard .info{padding:8px}
+.galcard .delbtn{position:absolute;top:6px;right:6px;width:22px;height:22px;border-radius:50%;background:rgba(239,68,68,.8);color:#fff;border:none;cursor:pointer;font-size:10px;display:none;align-items:center;justify-content:center}
+.galcard:hover .delbtn{display:flex}
+.stat-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;max-width:520px;margin-bottom:18px;flex-shrink:0}
+.stat{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
+.stat .val{font-family:'Bebas Neue',cursive;font-size:24px;background:linear-gradient(135deg,var(--primary),var(--warning));-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.stat .slbl{font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px}
+.logbox{background:var(--card);border:1px solid var(--border);border-radius:8px;max-height:150px;overflow-y:auto;flex-shrink:0}
+.logrow{display:flex;align-items:center;justify-content:space-between;padding:7px 12px;border-bottom:1px solid var(--border);font-size:11px}
+.logrow:last-child{border-bottom:none}
+.empty{text-align:center;padding:50px 24px;color:var(--muted)}
+.empty .eico{font-size:40px;opacity:.2;margin-bottom:10px}
+</style>
+</head>
+<body>
+
+<div class="loader" id="loader">
+  <div class="lring"></div>
+  <div class="ltxt" id="ltxt">Processing...</div>
+  <div class="lprog" id="lprog"><div class="lprog-bar" id="lprogBar" style="width:0%"></div></div>
+</div>
+<div class="toast" id="toast"></div>
+
+<!-- Header -->
+<div class="header">
+  <div class="logo" onclick="showPage('pgUpload')">
+    <span class="l1">Auto</span><span class="l2">Lens</span><span class="l1"> Pro</span>
+  </div>
+  <div class="hdr-right">
+    <button class="gbtn" id="galBtn" onclick="showPage('pgGallery')">🖼 Gallery <span id="galCnt"></span></button>
+    <div class="cpill"><span class="cnt">∞</span><span class="lbl">Credits</span></div>
+  </div>
+</div>
+
+<!-- ═══ UPLOAD ═══ -->
+<div class="page active" id="pgUpload">
+  <div class="ucenter">
+    <div style="font-size:56px;opacity:.2;margin-bottom:10px">🚘</div>
+    <h1 class="fd" style="font-size:30px;letter-spacing:4px;color:var(--muted);margin-bottom:8px">Car Background Studio</h1>
+    <p style="font-size:13px;color:var(--muted);max-width:340px;margin:0 auto 20px;line-height:1.6">Upload car photos to get started. Single or multiple files supported.</p>
+    <div class="uzone" id="uzone"
+      onclick="document.getElementById('finput').click()"
+      ondragover="event.preventDefault();this.classList.add('drag')"
+      ondragleave="this.classList.remove('drag')"
+      ondrop="event.preventDefault();this.classList.remove('drag');handleFiles(event.dataTransfer.files)">
+      <div style="font-size:30px;opacity:.5;margin-bottom:8px">🚗</div>
+      <p><strong>Drop car photos here</strong><br>or click to browse<br><span style="font-size:11px;opacity:.6">JPG · PNG · WEBP · up to 100MB</span></p>
+      <button class="bchoose" onclick="event.stopPropagation();document.getElementById('finput').click()">Choose Files</button>
+    </div>
+    <input type="file" id="finput" accept="image/*" multiple style="display:none" onchange="handleFiles(this.files);this.value=''">
+  </div>
+</div>
+
+<!-- ═══ CHOICE ═══ -->
+<div class="page" id="pgChoice">
+  <div class="ccenter">
+    <div style="font-size:42px;margin-bottom:10px">🚗</div>
+    <h2 class="fd" style="font-size:24px;letter-spacing:3px;margin-bottom:5px">How would you like to proceed?</h2>
+    <p style="font-size:12px;color:var(--muted);margin-bottom:18px" id="choiceSub">1 image selected</p>
+    <div class="cgrid">
+      <div class="cbtn oa" onclick="doDirectUpload()">
+        <div class="cico">📁</div><div class="ctitle">Direct Upload</div>
+        <div class="cdesc">Upload as-is to gallery instantly.</div>
+        <span class="cbadge">Instant · Free</span>
+      </div>
+      <div class="cbtn ob" onclick="doRemoveBgFlow()">
+        <div class="cico">✨</div><div class="ctitle">Remove BG</div>
+        <div class="cdesc">AI removes background, opens full studio.</div>
+        <span class="cbadge">AI Powered</span>
+      </div>
+    </div>
+    <button class="backlink" onclick="showPage('pgUpload')">← Back to upload</button>
+  </div>
+</div>
+
+<!-- ═══ EDITOR ═══ -->
+<div class="page" id="pgEditor">
+  <div class="etop">
+    <button class="bbtn" onclick="showPage('pgChoice')">← Back</button>
+    <span class="fd" style="font-size:15px;letter-spacing:2px" id="edTitle">Car</span>
+    <span style="font-size:9px;font-weight:700;padding:3px 9px;border-radius:20px;background:rgba(255,77,28,.12);color:var(--primary)">AI STUDIO</span>
+    <div style="flex:1"></div>
+    <div id="edNav" style="display:flex;align-items:center;gap:6px"></div>
+  </div>
+
+  <div class="ebody">
+    <!-- ══ SIDEBAR ══ -->
+    <aside class="eside">
+
+      <!-- Tab icons -->
+      <div class="mod-tabs">
+        <button class="mod-tab active" data-tip="BG Removal" onclick="switchMod('mBg')">✂</button>
+        <button class="mod-tab" data-tip="BG Library"   onclick="switchMod('mLib')">🎨</button>
+        <button class="mod-tab" data-tip="Processing"   onclick="switchMod('mProc')">⚙</button>
+        <button class="mod-tab" data-tip="Compare"      onclick="switchMod('mComp')">🔍</button>
+        <button class="mod-tab" data-tip="Export"       onclick="switchMod('mExp')">📥</button>
+        <button class="mod-tab" data-tip="Bulk"         onclick="switchMod('mBulk')">⚡</button>
+        <button class="mod-tab" data-tip="Credits"      onclick="switchMod('mInfo')">📊</button>
+      </div>
+
+      <!-- Panels -->
+      <div class="mod-panels">
+
+        <!-- ① BG Removal -->
+        <div class="mod-panel active" id="mBg">
+          <div class="elbl">✂ AI Background Removal</div>
+          <button class="abtn primary" onclick="doRemoveBg()">✂ Remove Background</button>
+
+          <div class="bgr-done" id="bgrResult">
+            <div style="font-size:9px;font-weight:700;color:var(--success);letter-spacing:1px">✅ Background Removed</div>
+            <div class="bgr-checker"><img id="bgrPreviewThumb" src="" alt=""></div>
+            <div class="bgr-meta2" id="bgrMeta"></div>
+          </div>
+
+          <div id="batchRemoveSect" style="display:none">
+            <button class="abtn warning" onclick="doBatchRemoveBg()">⚡ Batch Remove BG</button>
+          </div>
+
+          <div class="spacer"></div>
+          <button class="abtn accent" onclick="doApplyBg()">🖼 Apply Background</button>
+          <button class="abtn success" onclick="doSaveGallery()">💾 Save to Gallery</button>
+        </div>
+
+        <!-- ② BG Library -->
+        <div class="mod-panel" id="mLib">
+          <div class="elbl">🎨 Background Library</div>
+          <div class="bgtabs" id="bgTabs"></div>
+          <div id="bgContent"></div>
+          <div class="spacer"></div>
+          <button class="abtn accent" onclick="doApplyBg()">🖼 Apply Background</button>
+          <button class="abtn outline" onclick="doWatermark()">🏷 Add Watermark</button>
+        </div>
+
+        <!-- ③ Processing -->
+        <div class="mod-panel" id="mProc">
+          <div class="elbl">⚙ Image Processing</div>
+          <div>
+            <div class="row" style="margin-bottom:5px"><span>Lighting</span><span style="color:var(--warning);font-weight:600" id="lightVal">1.0x</span></div>
+            <input type="range" min="50" max="180" value="100" id="lightSlider" oninput="lightVal.textContent=(this.value/100).toFixed(1)+'x'">
+          </div>
+          <div class="row">
+            <span>Drop Shadow</span>
+            <button class="toggle on" id="shadowToggle" onclick="this.classList.toggle('on');this.classList.toggle('off')"><div class="dot"></div></button>
+          </div>
+          <div style="border-top:1px solid var(--border);padding-top:8px">
+            <div class="elbl">📐 Resize</div>
+            <div style="display:flex;gap:6px;margin-bottom:7px">
+              <div style="flex:1"><label style="font-size:9px;color:var(--muted)">W</label><input type="number" value="1200" id="rszW" class="tinput"></div>
+              <div style="flex:1"><label style="font-size:9px;color:var(--muted)">H</label><input type="number" value="800" id="rszH" class="tinput"></div>
+            </div>
+            <button class="abtn outline" onclick="doResize()">📐 Apply Resize</button>
+          </div>
+          <div class="spacer"></div>
+          <button class="abtn accent" onclick="doApplyBg()">🖼 Apply Background</button>
+        </div>
+
+        <!-- ④ Compare -->
+        <div class="mod-panel" id="mComp">
+          <div class="elbl">🔍 Before / After</div>
+          <p style="font-size:11px;color:var(--muted);line-height:1.5">Compare original vs processed image side by side using the slider.</p>
+          <div class="row">
+            <span>Enable Compare</span>
+            <button class="toggle off" id="cmpToggle" onclick="this.classList.toggle('on');this.classList.toggle('off');toggleCompare()"><div class="dot"></div></button>
+          </div>
+          <div id="cmpSliderWrap" style="display:none">
+            <div style="font-size:9px;color:var(--muted);margin-bottom:4px">Drag to compare ←→</div>
+            <input type="range" min="0" max="100" value="50" id="cmpSlider" oninput="updateCompare(this.value)">
+          </div>
+          <div class="spacer"></div>
+          <button class="abtn outline" onclick="cmpToggle.classList.remove('on');cmpToggle.classList.add('off');document.getElementById('cmpSliderWrap').style.display='none';updatePreview()">↺ Reset Preview</button>
+        </div>
+
+        <!-- ⑤ Export -->
+        <div class="mod-panel" id="mExp">
+          <div class="elbl">📥 Export &amp; Download</div>
+          <p style="font-size:11px;color:var(--muted);line-height:1.5">Download your processed car image.</p>
+          <button class="abtn outline" onclick="doDownload(false)">📥 Standard JPEG</button>
+          <button class="abtn accent" onclick="doDownload(true)">🎯 HD Export (1.5×)</button>
+          <div class="spacer"></div>
+          <button class="abtn success" onclick="doSaveGallery()">💾 Save to Gallery</button>
+        </div>
+
+        <!-- ⑥ Bulk -->
+        <div class="mod-panel" id="mBulk">
+          <div class="elbl">⚡ Bulk Processing</div>
+          <div style="background:var(--card);border-radius:7px;padding:9px;text-align:center;font-size:11px;color:var(--muted)" id="bulkInfo">0 images loaded</div>
+          <button class="abtn warning" id="bulkBtn" onclick="doBulkApply()">⚡ Apply to All</button>
+          <button class="abtn warning" id="batchBgBtn" onclick="doBatchRemoveBg()">✂ Batch Remove BG</button>
+          <div class="spacer"></div>
+          <button class="abtn success" onclick="doSaveGallery()">💾 Save All to Gallery</button>
+        </div>
+
+        <!-- ⑦ Credits -->
+        <div class="mod-panel" id="mInfo">
+          <div class="elbl">📊 Usage &amp; Credits</div>
+          <div style="background:var(--card);border-radius:8px;padding:12px;text-align:center;flex-shrink:0">
+            <div style="font-family:'Bebas Neue',cursive;font-size:34px;color:var(--success)" id="sideCredits">0</div>
+            <div style="font-size:9px;color:var(--muted);text-transform:uppercase;letter-spacing:1px">Credits Used</div>
+            <div style="font-size:9px;color:rgba(107,107,136,.5);margin-top:3px">All operations free ∞</div>
+          </div>
+          <div id="miniLogBox" style="flex:1;overflow-y:auto;background:var(--card);border:1px solid var(--border);border-radius:7px;min-height:0"></div>
+          <button class="abtn success" onclick="doSaveGallery()">💾 Save to Gallery</button>
+        </div>
+
+      </div><!-- /mod-panels -->
+    </aside>
+
+    <!-- ══ MAIN preview ══ -->
+    <div class="emain">
+      <div class="preview-box" id="previewBox">
+        <img id="previewImg" src="" alt="Preview">
+        <div class="status-tag" id="statusTag">ORIGINAL</div>
+      </div>
+      <div class="thumbstrip" id="thumbStrip"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GALLERY ═══ -->
+<div class="page" id="pgGallery">
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-shrink:0">
+    <button class="bbtn" onclick="showPage('pgUpload')">← Back</button>
+    <h1 class="fd" style="font-size:20px;letter-spacing:3px">🖼 My Car Gallery</h1>
+    <span id="galTotal" style="font-size:12px;color:var(--muted)"></span>
+  </div>
+  <div class="stat-grid" id="statGrid"></div>
+  <div id="logWrap" style="display:none;margin-bottom:16px;max-width:520px">
+    <h2 class="fd" style="font-size:14px;letter-spacing:2px;color:var(--muted);margin-bottom:8px">📊 Usage Log</h2>
+    <div class="logbox" id="logBox"></div>
+  </div>
+  <div id="galGrid"></div>
+</div>
+
+<script>
+let uploadedIds=[],currentIdx=0,bgTab='studio',selectedBg='studio_white',customColor='#1E3A5F';
+const BACKGROUNDS={{ backgrounds | tojson }};
+const SWATCHES={{ swatches | tojson }};
+
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  document.getElementById('galBtn').classList.toggle('active',id==='pgGallery');
+  if(id==='pgGallery') loadGallery();
+  if(id==='pgEditor') renderEditor();
+}
+
+function switchMod(id){
+  const tabs=document.querySelectorAll('.mod-tab');
+  const ids=['mBg','mLib','mProc','mComp','mExp','mBulk','mInfo'];
+  tabs.forEach((t,i)=>t.classList.toggle('active',ids[i]===id));
+  document.querySelectorAll('.mod-panel').forEach(p=>p.classList.toggle('active',p.id===id));
+  if(id==='mInfo') loadSideCredits();
+}
+
+function showLoader(msg,prog=false){
+  document.getElementById('ltxt').textContent=msg;
+  document.getElementById('loader').classList.add('show');
+  document.getElementById('lprog').classList.toggle('show',prog);
+  if(prog) setProgress(0);
+}
+function setProgress(p){document.getElementById('lprogBar').style.width=p+'%'}
+function hideLoader(){document.getElementById('loader').classList.remove('show')}
+function showToast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast show '+type;
+  setTimeout(()=>t.classList.remove('show'),3000);
+}
+
+async function handleFiles(files){
+  const valid=Array.from(files).filter(f=>f.type.startsWith('image/'));
+  if(!valid.length){showToast('No valid image files','err');return;}
+  showLoader('Uploading '+valid.length+' file(s)...');
+  const fd=new FormData();
+  valid.forEach(f=>fd.append('files',f));
+  try{
+    const res=await fetch('/api/upload',{method:'POST',body:fd});
+    if(!res.ok){const e=await res.json().catch(()=>({}));hideLoader();showToast(e.error||'Upload failed','err');return;}
+    const data=await res.json();
+    if(!data?.length){hideLoader();showToast('No images uploaded','err');return;}
+    uploadedIds=data.map(d=>d.id);currentIdx=0;
+    hideLoader();
+    document.getElementById('choiceSub').textContent=uploadedIds.length+' image'+(uploadedIds.length>1?'s':'')+' selected';
+    showPage('pgChoice');
+  }catch(e){hideLoader();showToast('Upload failed: '+e.message,'err');}
+}
+
+async function doDirectUpload(){
+  showLoader('Saving...');
+  await fetch('/api/direct-upload',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:uploadedIds})});
+  hideLoader();showToast('Saved to gallery!');showPage('pgGallery');
+}
+function doRemoveBgFlow(){showPage('pgEditor');}
+
+async function renderEditor(){
+  renderBgTabs();updatePreview();renderThumbs();
+  const n=uploadedIds.length,multi=n>1;
+  document.getElementById('batchRemoveSect').style.display=multi?'block':'none';
+  document.getElementById('bulkInfo').textContent=n+' image'+(multi?'s':'')+' loaded';
+  document.getElementById('bulkBtn').textContent='⚡ Apply to All ('+n+')';
+  document.getElementById('batchBgBtn').textContent='✂ Batch Remove BG ('+n+')';
+}
+
+function renderBgTabs(){
+  document.getElementById('bgTabs').innerHTML=
+    ['studio','outdoor','custom'].map(t=>`<button class="bgtab ${bgTab===t?'active':''}" onclick="setBgTab('${t}')">${t}</button>`).join('');
+  renderBgContent();
+}
+function setBgTab(t){bgTab=t;renderBgTabs();}
+function renderBgContent(){
+  const c=document.getElementById('bgContent');
+  if(bgTab==='custom'){
+    c.innerHTML=`<div style="display:flex;align-items:center;gap:7px;margin-bottom:7px">
+      <input type="color" value="${customColor}" onchange="customColor=this.value;document.getElementById('chex').value=this.value" style="width:36px;height:36px;border-radius:6px;border:2px solid var(--border);cursor:pointer;padding:0">
+      <input type="text" id="chex" class="tinput" value="${customColor}" maxlength="7" oninput="if(/^#[0-9A-Fa-f]{0,6}$/.test(this.value))customColor=this.value" style="text-transform:uppercase">
+    </div><div class="swgrid">${SWATCHES.map(s=>`<div class="sw ${customColor===s?'sel':''}" style="background:${s}" onclick="customColor='${s}';renderBgContent()"></div>`).join('')}</div>`;
+  }else{
+    const bgs=BACKGROUNDS[bgTab]||[];
+    c.innerHTML=`<div class="bggrid">${bgs.map(b=>`<div class="bgcard ${selectedBg===b.id?'sel':''}" onclick="selectedBg='${b.id}';renderBgContent()"><div class="bgprev" style="background:${b.color}"></div><div class="bgname">${b.name}</div></div>`).join('')}</div>`;
+  }
+}
+
+async function updatePreview(){
+  if(!uploadedIds.length) return;
+  const id=uploadedIds[currentIdx];
+  const img=document.getElementById('previewImg');
+  for(const [prefix,ext] of [['proc_','.jpg'],['nobg_','.png'],['car_','.jpg']]){
+    const url=prefix==='car_'?`/static/uploads/car_${id}${ext}`:`/static/processed/${prefix}${id}${ext}`;
+    try{const r=await fetch(url,{method:'HEAD'});if(r.ok){img.src=url+'?t='+Date.now();break;}}catch(e){}
+  }
+  if(!img.src||img.src.includes('undefined')) img.src='/api/download/'+id;
+  document.getElementById('edTitle').textContent='Car '+(currentIdx+1);
+  renderNavBtns();
+}
+function renderNavBtns(){
+  const nav=document.getElementById('edNav');
+  if(uploadedIds.length<=1){nav.innerHTML='';return;}
+  nav.innerHTML=`<button class="bbtn" ${currentIdx===0?'disabled':''} onclick="currentIdx--;updatePreview();renderThumbs()">← Prev</button>
+    <span style="font-size:10px;color:var(--muted)">${currentIdx+1}/${uploadedIds.length}</span>
+    <button class="bbtn" ${currentIdx>=uploadedIds.length-1?'disabled':''} onclick="currentIdx++;updatePreview();renderThumbs()">Next →</button>`;
+}
+function renderThumbs(){
+  const strip=document.getElementById('thumbStrip');
+  if(uploadedIds.length<=1){strip.innerHTML='';return;}
+  strip.innerHTML=uploadedIds.map((id,i)=>`<button class="thumb ${i===currentIdx?'sel':''}" onclick="currentIdx=${i};updatePreview();renderThumbs()"><img src="/api/download/${id}" alt=""></button>`).join('');
+}
+
+async function doRemoveBg(){
+  const id=uploadedIds[currentIdx];
+  showLoader('AI removing background...',true);
+  let prog=0;
+  const pi=setInterval(()=>{prog=Math.min(prog+5,90);setProgress(prog);},300);
+  try{
+    const r=await fetch('/api/remove-bg/'+id,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({engine:'auto',quality:'standard',despill:false})});
+    clearInterval(pi);setProgress(100);
+    const d=await r.json();hideLoader();
+    if(d.error){showToast('Failed: '+d.error,'err');return;}
+    showToast('Background removed!');updatePreview();
+    const res=document.getElementById('bgrResult');
+    res.classList.add('show');
+    if(d.preview_b64) document.getElementById('bgrPreviewThumb').src='data:image/png;base64,'+d.preview_b64;
+    document.getElementById('bgrMeta').innerHTML=[
+      {k:'Engine',v:d.method||'auto'},
+      {k:'Size',v:d.image_size?d.image_size[0]+'×'+d.image_size[1]:'—'},
+    ].map(m=>`<div class="bm"><div class="k">${m.k}</div><div class="v">${m.v}</div></div>`).join('');
+  }catch(e){clearInterval(pi);hideLoader();showToast('Failed','err');}
+}
+
+async function doBatchRemoveBg(){
+  showLoader('Batch removing backgrounds...',true);
+  for(let i=0;i<uploadedIds.length;i++){
+    document.getElementById('ltxt').textContent=`Removing BG ${i+1}/${uploadedIds.length}...`;
+    setProgress(((i+1)/uploadedIds.length)*100);
+    try{await fetch('/api/remove-bg/'+uploadedIds[i],{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({engine:'auto',quality:'standard',despill:false})});}catch(e){}
+  }
+  hideLoader();showToast('Batch complete!');updatePreview();
+}
+
+function getBgParams(){
+  return{
+    bg_id:bgTab==='custom'?'custom':selectedBg,
+    custom_color:bgTab==='custom'?customColor:undefined,
+    lighting:document.getElementById('lightSlider').value/100,
+    shadow:document.getElementById('shadowToggle').classList.contains('on'),
+    width:parseInt(document.getElementById('rszW').value)||1200,
+    height:parseInt(document.getElementById('rszH').value)||800,
+  };
+}
+
+async function doApplyBg(){
+  showLoader('Applying background...');
+  try{
+    await fetch('/api/apply-bg/'+uploadedIds[currentIdx],{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(getBgParams())});
+    hideLoader();showToast('Background applied!');updatePreview();
+  }catch(e){hideLoader();showToast('Failed','err');}
+}
+async function doWatermark(){
+  showLoader('Adding watermark...');
+  try{
+    await fetch('/api/watermark/'+uploadedIds[currentIdx],{method:'POST'});
+    hideLoader();showToast('Watermark added!');updatePreview();
+  }catch(e){hideLoader();showToast('Failed','err');}
+}
+async function doResize(){
+  const w=parseInt(document.getElementById('rszW').value)||1200;
+  const h=parseInt(document.getElementById('rszH').value)||800;
+  showLoader('Resizing...');
+  try{
+    await fetch('/api/resize/'+uploadedIds[currentIdx],{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({width:w,height:h})});
+    hideLoader();showToast('Resized to '+w+'×'+h);updatePreview();
+  }catch(e){hideLoader();showToast('Failed','err');}
+}
+
+function toggleCompare(){
+  const on=document.getElementById('cmpToggle').classList.contains('on');
+  document.getElementById('cmpSliderWrap').style.display=on?'block':'none';
+  if(on)setupCompare(); else updatePreview();
+}
+function setupCompare(){
+  const id=uploadedIds[currentIdx];
+  document.getElementById('previewBox').innerHTML=`
+    <div class="compare-wrap">
+      <img src="/api/download/${id}" alt="Original">
+      <div style="position:absolute;inset:0;overflow:hidden;width:50%" id="cmpClip">
+        <img src="/static/processed/proc_${id}.jpg" alt="Processed" style="min-width:200%">
+      </div>
+      <div class="compare-line" id="cmpLine" style="left:50%"></div>
+      <div class="compare-lbl" style="left:8px">Original</div>
+      <div class="compare-lbl" style="right:8px">Processed</div>
+    </div>`;
+}
+function updateCompare(v){
+  const c=document.getElementById('cmpClip'),l=document.getElementById('cmpLine');
+  if(c){c.style.width=v+'%';c.querySelector('img').style.minWidth=(10000/v)+'%';}
+  if(l) l.style.left=v+'%';
+}
+
+async function doBulkApply(){
+  showLoader('Bulk processing...',true);
+  try{
+    const p=getBgParams();p.ids=uploadedIds;p.engine='auto';p.quality='standard';
+    const r=await fetch('/api/apply-to-all',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(p)});
+    const d=await r.json();
+    hideLoader();showToast('Processed '+d.done+'/'+d.total+' images!');updatePreview();
+  }catch(e){hideLoader();showToast('Failed','err');}
+}
+
+function doDownload(hd){
+  const a=document.createElement('a');
+  a.href='/api/download/'+uploadedIds[currentIdx];
+  a.download='car_'+uploadedIds[currentIdx]+(hd?'_hd':'')+'.jpg';
+  a.click();
+}
+
+async function doSaveGallery(){
+  showLoader('Saving...');
+  await fetch('/api/save-gallery',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({ids:uploadedIds})});
+  hideLoader();showToast('Saved to gallery!');showPage('pgGallery');
+}
+
+async function loadSideCredits(){
+  try{
+    const r=await fetch('/api/credit-logs');
+    const logs=await r.json();
+    document.getElementById('sideCredits').textContent=logs.reduce((s,l)=>s+l.cost,0);
+    const box=document.getElementById('miniLogBox');
+    box.innerHTML=logs.length
+      ?logs.slice(0,8).map(l=>`<div class="logrow"><span>${l.action}</span><span style="font-size:9px;color:var(--muted)">${new Date(l.time).toLocaleTimeString()}</span></div>`).join('')
+      :'<div style="padding:12px;text-align:center;font-size:11px;color:var(--muted)">No actions yet</div>';
+  }catch(e){}
+}
+
+async function loadGallery(){
+  const [gRes,lRes]=await Promise.all([fetch('/api/gallery'),fetch('/api/credit-logs')]);
+  const gallery=await gRes.json(),logs=await lRes.json();
+  const processed=gallery.filter(g=>g.status==='completed').length;
+  document.getElementById('galTotal').textContent=gallery.length+' cars';
+  document.getElementById('galCnt').textContent=gallery.length?'('+gallery.length+')':'';
+  document.getElementById('statGrid').innerHTML=[
+    {l:'Total',v:gallery.length},{l:'Processed',v:processed},
+    {l:'Uploaded',v:gallery.length-processed},{l:'Credits',v:logs.reduce((s,l)=>s+l.cost,0)}
+  ].map(s=>`<div class="stat"><div class="val">${s.v}</div><div class="slbl">${s.l}</div></div>`).join('');
+  if(logs.length){
+    document.getElementById('logWrap').style.display='block';
+    document.getElementById('logBox').innerHTML=logs.map(l=>`<div class="logrow"><span>${l.action}</span><div style="display:flex;align-items:center;gap:8px"><span style="color:var(--primary);font-weight:700">Free</span><span style="color:var(--muted);font-size:9px">${new Date(l.time).toLocaleTimeString()}</span></div></div>`).join('');
+  }else document.getElementById('logWrap').style.display='none';
+  const grid=document.getElementById('galGrid');
+  if(!gallery.length){grid.innerHTML='<div class="empty"><div class="eico">🖼</div><p>No cars saved yet.</p></div>';return;}
+  grid.className='galgrid';
+  grid.innerHTML=gallery.map(g=>{
+    const src=g.processed_url||g.nobg_url||g.original_url;
+    const badge=g.status==='completed'?'background:rgba(0,230,118,.1);color:var(--success)':g.status==='bg_removed'?'background:rgba(255,176,32,.1);color:var(--warning)':'background:rgba(0,212,255,.1);color:var(--accent)';
+    return `<div class="galcard"><button class="delbtn" onclick="delGal('${g.id}')">✕</button><img src="${src}" alt="${g.car_name}"><div class="info"><div style="font-size:11px;font-weight:500;margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${g.car_name}</div><div style="display:flex;align-items:center;justify-content:space-between"><span style="font-size:9px;font-weight:700;padding:2px 7px;border-radius:4px;${badge}">${g.status.toUpperCase()}</span><a href="/api/download/${g.id}" download style="font-size:12px;color:var(--muted);text-decoration:none">📥</a></div></div></div>`;
+  }).join('');
+}
+async function delGal(id){
+  await fetch('/api/gallery/'+id,{method:'DELETE'});
+  showToast('Deleted');loadGallery();
+}
+</script>
+</body>
+</html>
